@@ -24,11 +24,43 @@ Adafruit_SI1145::Adafruit_SI1145() {
 
 boolean Adafruit_SI1145::begin(void) {
   Wire.begin();
- 
-  uint8_t id = read8(SI1145_REG_PARTID);
-  if (id != 0x45) return false; // look for SI1145
-  
   reset();
+ 
+  //  write the address (_addr) to the PARAM_WR I2C register (0x17)
+  
+  updateI2Caddr(0x17, _addr);
+
+//  write a PARAM_SET command into the COMMAND register (0x18)
+   updateI2Caddr(0x18, 0xA0);
+
+/*  tell the chip you want to read the command response register.
+    the first half is a "tell the chip what address I want by starting
+    a write but not sending any data" transaction.. regrettably common 
+    in I2C
+*/
+	quickWrite(0x2E);
+	
+	uint8_t paramVerify = quickRead(0x01);
+
+	Serial.print( "return value from PARAM_SET command: 0x" );
+	Serial.print( paramVerify, HEX );
+
+/*  now, having done all that, execute a BUSADDR command to use the address
+    we've stored in the PRAM
+*/
+	updateI2Caddr(0x18, 0x02);  //  BUSADDR command
+
+//  this time we find the result in the RESPONSE register (0x20)
+
+	quickWrite(0x20);
+	paramVerify = quickRead(0x01);
+	Serial.print( "return value from BUSADDR command: 0x" );
+	Serial.print( paramVerify, HEX );
+	
+	uint8_t id = read8(SI1145_REG_PARTID);
+  	if (id != 0x45) return false; // look for SI1145
+  
+
   
 
     /***********************************/
@@ -91,17 +123,17 @@ boolean Adafruit_SI1145::begin(void) {
 }
 
 void Adafruit_SI1145::reset() {
-  write8(SI1145_REG_MEASRATE0, 0);
-  write8(SI1145_REG_MEASRATE1, 0);
-  write8(SI1145_REG_IRQEN, 0);
-  write8(SI1145_REG_IRQMODE1, 0);
-  write8(SI1145_REG_IRQMODE2, 0);
-  write8(SI1145_REG_INTCFG, 0);
-  write8(SI1145_REG_IRQSTAT, 0xFF);
+  updateI2Caddr(SI1145_REG_MEASRATE0, 0);
+  updateI2Caddr(SI1145_REG_MEASRATE1, 0);
+  updateI2Caddr(SI1145_REG_IRQEN, 0);
+  updateI2Caddr(SI1145_REG_IRQMODE1, 0);
+  updateI2Caddr(SI1145_REG_IRQMODE2, 0);
+  updateI2Caddr(SI1145_REG_INTCFG, 0);
+  updateI2Caddr(SI1145_REG_IRQSTAT, 0xFF);
 
-  write8(SI1145_REG_COMMAND, SI1145_RESET);
+  updateI2Caddr(SI1145_REG_COMMAND, SI1145_RESET);
   delay(10);
-  write8(SI1145_REG_HWKEY, 0x17);
+  updateI2Caddr(SI1145_REG_HWKEY, 0x17);
   
   delay(10);
 }
@@ -177,4 +209,27 @@ void Adafruit_SI1145::write8(uint8_t reg, uint8_t val) {
   Wire.write(reg); // sends register address to write
   Wire.write(val); // sends value
   Wire.endTransmission(); // end transmission
+}
+
+/**************************************************************/
+void Adafruit_SI1145::updateI2Caddr(uint8_t reg, uint8_t val) {
+  Wire.beginTransmission(0x60); // start transmission to device 
+  Wire.write(reg); // sends register address to write
+  Wire.write(val); // sends value
+  Wire.endTransmission(); // end transmission
+  }
+  
+void Adafruit_SI1145::quickWrite(uint8_t val) {
+ 	Wire.beginTransmission(0x60); // start transmission to device 
+  	Wire.write(val); // sends value
+  	Wire.endTransmission(); // end transmission
+  }
+  
+uint8_t Adafruit_SI1145::quickRead(uint8_t reg) {
+    Wire.beginTransmission(0x60);
+    Wire.write((uint8_t)reg);
+    Wire.endTransmission();
+    
+	Wire.requestFrom((uint8_t)0x60, (uint8_t)1);  // read one byte from the address just set
+	return Wire.read();
 }
