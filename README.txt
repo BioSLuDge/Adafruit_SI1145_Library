@@ -14,6 +14,9 @@ Check out the links above for our tutorials and wiring diagrams
 Written by Limor Fried/Ladyada for Adafruit Industries.  
 BSD license, all text above must be included in any redistribution
 
+With code provided from the Adafruit forums for changing the address.
+https://forums.adafruit.com/viewtopic.php?f=22&t=59664
+
 To download. click the DOWNLOADS button in the top right corner, rename the uncompressed folder Adafruit_SI1145. Check that the Adafruit_SI1145 folder contains Adafruit_SI1145.cpp and Adafruit_SI1145.h
 
 Place the Adafruit_SI1145 library folder your arduinosketchfolder/libraries/ folder. You may need to create the libraries subfolder if its your first library. Restart the IDE.
